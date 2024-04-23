@@ -1,0 +1,163 @@
+body {
+  font-family: "gg sans", Arial, sans-serif;
+  background-color: #f4f4f8;
+  color: #333;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  color: #000;
+  font-size: 24px;
+  text-align: center;
+}
+#filter-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+select,
+#userIdFilter {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  background-color: #fff;
+  margin-bottom: 20px;
+}
+#messages {
+  display: flex;
+  flex-direction: column-reverse; /* Display new messages on top */
+  align-items: center;
+}
+.message {
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  flex-wrap: wrap;
+  width: 100%; /* Full width */
+  max-width: 600px; /* Maximum width */
+}
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  flex-shrink: 0; /* Prevent avatar from shrinking */
+}
+.message-content {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden; /* Hide overflow */
+  word-break: break-word; /* To break long words and prevent overflow */
+}
+.attachment-image,
+.embedded-image,
+.custom-emoji,
+.sticker {
+  max-height: 100px;
+  width: auto;
+  border-radius: 8px;
+}
+.tooltip .tooltiptext {
+  visibility: hidden;
+  background-color: #555; /* Darker for better visibility */
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 10px; /* Adjust padding */
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+a {
+  text-decoration: none;
+}
+
+pre,
+code {
+  background: #f4f4f8; /* Light grey background */
+  border: 1px solid #ccc; /* Add border for visibility */
+  display: block; /* Make code blocks behave like block-level elements */
+  white-space: pre-wrap; /* Wrap as needed */
+  overflow-x: auto; /* Enable horizontal scrolling if the code is too wide */
+}
+
+#navbar {
+  background-color: #f4f4f8; /* Light grey background similar to body */
+  padding: 10px 20px; /* Padding for some space around the links */
+  text-align: center; /* Centering the navbar links */
+}
+
+#navbar a {
+  color: #333; /* Dark grey text color for links */
+  margin: 0 15px; /* Margin between the links */
+  text-decoration: none; /* No underline on the links */
+  font-size: 16px; /* Slightly larger font size for better readability */
+  font-family: "gg sans", Arial, sans-serif; /* Ensuring font consistency */
+}
+
+#navbar a:hover {
+  color: #007bff; /* Blue color on hover for a subtle interaction feedback */
+}
+
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0, 0, 0); /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #fefefe;
+  margin: 15% auto; /* 15% from the top and centered */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%; /* Could be more or less, depending on screen size */
+  border-radius: 20px;
+}
+
+/* The Close Button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Buttons inside the modal */
+.modal-content button {
+  padding: 10px 20px;
+  margin: 10px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .message {
+    flex-direction: column;
+    align-items: center;
+  }
+}

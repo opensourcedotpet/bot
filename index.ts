@@ -134,9 +134,6 @@ client.on("messageCreate", async (message) => {
   if (message.author.bot || message.webhookId || !message.guild) return;
 
   if (guildIDs.includes(message.guild.id)) {
-    const replyContent = await fetchReplyContent(message);
-    const attachmentContent = fetchAttachmentContent(message);
-
     const messageData = {
       username: message.author.username,
       avatar_url: message.author.displayAvatarURL({
