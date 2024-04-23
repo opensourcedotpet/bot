@@ -7,10 +7,15 @@ const userIdFilter = document.getElementById("userIdFilter");
 let messages = [];
 
 socket.on("updateFilters", function (data) {
-  // You might want to pass data to updateFilters if it needs to use this data directly
   updateFilters();
   messages.unshift(data); // prepend new messages to the array
   displayMessages(); // call to update the message display
+});
+
+socket.on("updateStats", function (stats) {
+  console.log("Received stats:", stats);
+  document.getElementById('guild-count').textContent = stats.guildCount.toLocaleString();
+  document.getElementById('user-count').textContent = stats.userCount.toLocaleString();
 });
 
 let currentPage = 0;

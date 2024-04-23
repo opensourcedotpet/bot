@@ -2,6 +2,7 @@ import {
   Client,
   MessageEmbed,
   Message,
+  Guild,
   type PartialMessage,
 } from "discord.js-selfbot-v13";
 import ioClient from "socket.io-client";
@@ -26,11 +27,6 @@ const io = socketIo(httpServer, {
   },
 });
 
-io.on("connection", (serverSocket: any) => {
-  // Renamed variable to avoid confusion
-  console.log("a user connected via server socket");
-});
-
 httpServer.listen(3000, () => {
   console.log("WebSocket server listening on *:3000");
 });
@@ -46,8 +42,34 @@ clientSocket.on("connect_error", (error: any) => {
   console.error("Connection error:", error);
 });
 
-client.on("ready", () => {
+let latestStats = { guildCount: 0, userCount: 0 };
+
+// When a new client connects, send them the latest stats
+io.on(
+  "connection",
+  (socket: {
+    emit: (
+      arg0: string,
+      arg1: { guildCount: number; userCount: number }
+    ) => void;
+  }) => {
+    console.log("A client connected, sending latest stats:", latestStats);
+    socket.emit("updateStats", latestStats);
+  }
+);
+
+client.on("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}!`);
+
+  const totalUsers = await calculateTotalUsers(client, guildIDs);
+  latestStats = {
+    guildCount: guildIDs.length,
+    userCount: totalUsers,
+  };
+
+  // Emit the updated stats to all connected clients
+  io.emit("updateStats", latestStats);
+  console.log(`Updated stats emitted: ${JSON.stringify(latestStats)}`);
 });
 
 // Fetching reply content with error handling
@@ -76,6 +98,33 @@ function fetchAttachmentContent(message: Message | PartialMessage) {
   return message.attachments.size > 0
     ? "**Attachments:**\n" + attachmentUrls
     : "";
+}
+
+// This function calculates the total number of users across all guilds
+async function calculateTotalUsers(
+  client: Client,
+  guildIDs: string[]
+): Promise<number> {
+  let totalUsers = 0;
+
+  // Loop through supplied guild IDs.
+  for (const guildId of guildIDs) {
+    // Check if the client is in the guild with the given ID.
+    const guild = client.guilds.cache.get(guildId);
+    if (guild) {
+      try {
+        // Fetch the latest guild information to get the current member count.
+        const fetchedGuild = await guild.fetch();
+        totalUsers += fetchedGuild.memberCount;
+      } catch (error) {
+        console.error(`Failed to fetch guild ${guildId}:`, error);
+      }
+    } else {
+      console.log(`Guild with ID ${guildId} not found.`);
+    }
+  }
+
+  return totalUsers;
 }
 
 client.on("guildMemberAdd", (member) => {

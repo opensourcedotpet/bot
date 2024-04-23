@@ -1,15 +1,30 @@
 body {
-  font-family: "gg sans", Arial, sans-serif;
+  font-family: "gg sans", sans-serif;
   background-color: #f4f4f8;
   color: #333;
   margin: 0;
-  padding: 20px;
+  padding: 20px; /* Uniform padding around the body */
 }
+
+/* Ensure full height for html and body */
+html,
+body {
+  height: 100%;
+}
+
+/* Page container to control the flow of the document */
+#page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 63vh; /* Use viewport height to ensure it covers the whole screen */
+}
+
 h1 {
   color: #000;
   font-size: 24px;
   text-align: center;
 }
+
 #filter-container {
   display: flex;
   justify-content: space-between;
@@ -17,6 +32,7 @@ h1 {
   gap: 10px;
   margin-bottom: 20px;
 }
+
 select,
 #userIdFilter {
   flex-grow: 1;
@@ -25,8 +41,8 @@ select,
   border: 1px solid #ccc;
   font-size: 16px;
   background-color: #fff;
-  margin-bottom: 20px;
 }
+
 #messages {
   display: flex;
   flex-direction: column-reverse; /* Display new messages on top */
@@ -82,31 +98,13 @@ a {
   text-decoration: none;
 }
 
+/* Adjust the pre, code block display for better readability and spacing */
 pre,
 code {
-  background: #f4f4f8; /* Light grey background */
-  border: 1px solid #ccc; /* Add border for visibility */
-  display: block; /* Make code blocks behave like block-level elements */
-  white-space: pre-wrap; /* Wrap as needed */
-  overflow-x: auto; /* Enable horizontal scrolling if the code is too wide */
-}
-
-#navbar {
-  background-color: #f4f4f8; /* Light grey background similar to body */
-  padding: 10px 20px; /* Padding for some space around the links */
-  text-align: center; /* Centering the navbar links */
-}
-
-#navbar a {
-  color: #333; /* Dark grey text color for links */
-  margin: 0 15px; /* Margin between the links */
-  text-decoration: none; /* No underline on the links */
-  font-size: 16px; /* Slightly larger font size for better readability */
-  font-family: "gg sans", Arial, sans-serif; /* Ensuring font consistency */
-}
-
-#navbar a:hover {
-  color: #007bff; /* Blue color on hover for a subtle interaction feedback */
+  background: #f4f4f8; /* Light grey background for readability */
+  border: 1px solid #ccc; /* Subtle border for definition */
+  padding: 0.5em; /* Padding inside code blocks */
+  overflow-x: auto; /* Enables horizontal scrolling for long lines of code */
 }
 
 /* The Modal (background) */
@@ -155,9 +153,114 @@ code {
   cursor: pointer;
 }
 
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 40px 0;
+  background-color: #f4f4f8; /* Or any other color */
+}
+
+.stat h1 {
+  font-size: 2.5rem; /* Large font size for the number */
+  margin: 0;
+  font-weight: bold;
+}
+
+.stat p {
+  font-size: 1rem; /* Adjust as needed for the description text */
+  margin: 0;
+  color: #333; /* Dark grey color */
+}
+
+#content-wrap {
+  flex: 1; /* This will push the footer down only when there's not enough content */
+}
+
+footer {
+  background-color: #e7e5e4;
+  color: #333;
+  padding: 20px;
+  border-top: 1px solid #ccc;
+  /* Removed width: 100%; since it's block level and will naturally expand */
+  /* Removed flex-shrink: 0; as it's not necessary with the current flex settings */
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between; /* This keeps the sections spread across the width */
+  align-items: flex-start;
+  max-width: 1200px;
+  margin: 0 auto; /* Center the footer container */
+  padding: 0 20px;
+  flex-wrap: wrap; /* Allows items to wrap if needed */
+}
+
+.footer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 50px; /* Adds some margin to the right of each section */
+}
+
+.footer-section h2 {
+  font-size: 1.25rem; /* Adjust the size as needed */
+  margin-bottom: 0.5rem; /* Adjust space between title and text */
+}
+
+.footer-section p,
+.footer-section a {
+  font-size: 1rem; /* Adjust the size as needed */
+  margin: 0; /* Remove margin for a tighter fit */
+  padding: 0.25rem 0; /* Adjust padding as needed */
+  list-style: none; /* Remove bullet points from list items if <ul>/<li> is used */
+  color: #000;
+}
+
+.footer-section a {
+  color: #000;
+  text-decoration: none;
+  padding: 5px 0; /* Ensures there's padding for clickable area */
+}
+
+.link {
+  display: flex; /* Enables flexbox */
+  align-items: center; /* Centers the items vertically */
+  text-decoration: none; /* Optional: removes underline from the link */
+}
+
+.icon {
+  height: 1rem; /* Example size, adjust as needed */
+  width: 1rem; /* Example size, adjust as needed */
+  margin-right: 0.5rem; /* Adds space between the icon and the text */
+}
+
 @media (max-width: 768px) {
   .message {
     flex-direction: column;
     align-items: center;
+    margin: 10px; /* Less margin for tighter mobile layout */
+  }
+  .footer-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .footer-section {
+    margin-right: 0;
+    margin-bottom: 1rem; /* Adds space between the sections on smaller screens */
+  }
+  .stats-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  .stat {
+    margin-bottom: 20px;
+  }
+  .stat:last-child {
+    margin-bottom: 0;
+  }
+  body,
+  #page-container {
+    padding: 0; /* Remove padding on small screens for edge-to-edge design */
   }
 }
