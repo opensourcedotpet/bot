@@ -90,6 +90,14 @@
       a {
         text-decoration: none;
       }
+
+      pre,
+      code {
+        background: #f4f4f8; /* Light grey background */
+        border: 1px solid #ccc; /* Add border for visibility */
+        overflow-x: auto; /* Enable horizontal scrolling for wide code blocks */
+      }
+
       @media (max-width: 768px) {
         .message {
           flex-direction: column;
@@ -129,15 +137,44 @@
         displayMessages(); // call to update the message display
       });
 
+      let currentPage = 0;
+      const pageSize = 50; // Number of messages to load per page
+      let allMessagesLoaded = false;
+
+      window.addEventListener("scroll", () => {
+        if (nearBottomOfPage() && !allMessagesLoaded) {
+          currentPage++;
+          loadMoreMessages(currentPage);
+        }
+      });
+
+      function nearBottomOfPage() {
+        return (
+          window.innerHeight + window.scrollY >=
+          document.body.offsetHeight - 100
+        );
+      }
+
+      function loadMoreMessages(page) {
+        // Assuming `messages` is a globally stored array of all messages
+        const startIndex = page * pageSize;
+        const endIndex = startIndex + pageSize;
+        const messagesToLoad = messages.slice(startIndex, endIndex);
+
+        if (messagesToLoad.length === 0) {
+          allMessagesLoaded = true;
+          return;
+        }
+
+        messagesToLoad.forEach((message) => {
+          const messageElement = createMessageElement(message);
+          messagesContainer.appendChild(messageElement); // Append new messages at the end
+        });
+      }
+
       guildFilter.addEventListener("change", displayFilteredMessages);
       userFilter.addEventListener("change", displayFilteredMessages);
       userIdFilter.addEventListener("input", displayFilteredMessages);
-
-      function sanitizeHTML(text) {
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML; // The browser escapes HTML tags, preventing XSS
-      }
 
       function displayMessages() {
         messagesContainer.innerHTML = ""; // Clear the message container
@@ -145,6 +182,32 @@
           const messageElement = createMessageElement(message);
           messagesContainer.prepend(messageElement); // Show new messages on top
         });
+      }
+
+      function formatCodeBlocks(content) {
+        console.log("Original Content: ", content);
+        const formattedContent = content.replace(
+          /```(\w*)\n?([\s\S]*?)```/g,
+          (match, lang, code) => {
+            const escapedCode = escapeHTML(code);
+            console.log("Code Block: ", escapedCode);
+            return `<pre><code class='${
+              lang || ""
+            }'>${escapedCode}</code></pre>`;
+          }
+        );
+        console.log("Formatted Content: ", formattedContent);
+        return formattedContent;
+      }
+
+      function escapeHTML(code) {
+        // Escaping HTML to prevent XSS and correctly display special characters
+        return code
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
       }
 
       function createMessageElement(message) {
@@ -181,7 +244,9 @@
         // New line for message text
         const textElement = document.createElement("div");
         textElement.className = "message-text";
-        textElement.innerHTML = message.content; // Assuming content is already sanitized and safe to display
+        // Process and set the formatted content with code blocks
+        textElement.innerHTML = formatCodeBlocks(message.content);
+        contentContainer.appendChild(textElement);
 
         // Handling custom emojis and Tenor GIFs within the message content
         replaceCustomContent(textElement);
@@ -261,7 +326,7 @@
           }
         });
 
-        guildFilter.innerHTML = '<option value="">Select a Guild</option>';
+        guildFilter.innerHTML = '<option value="">Guild</option>';
         guildSet.forEach((guild) => {
           const option = document.createElement("option");
           option.textContent = guild;
@@ -269,7 +334,7 @@
           guildFilter.appendChild(option);
         });
 
-        userFilter.innerHTML = '<option value="">Select a User</option>';
+        userFilter.innerHTML = '<option value="">User</option>';
         userSet.forEach((user) => {
           const option = document.createElement("option");
           option.textContent = user;
