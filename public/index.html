@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Discord Message Stream</title>
+    <link
+      href="https://cdn.jsdelivr.net/gh/uchks/ggcdn@master/ggsans.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: "gg sans", sans-serif; /* Using 'gg sans' as the primary font, with fallbacks */
+        background-color: #f4f4f8;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        color: #000000;
+        font-size: 24px;
+        text-align: center;
+      }
+      select {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+      }
+      #messages {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #userIdFilter {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+        font-size: 16px;
+        background-color: #f9f9f9;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .message {
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        width: 80%; /* Responsive width */
+        max-width: 600px; /* Maximum width */
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 15px;
+      }
+      .attachment-image,
+      .embedded-image {
+        max-width: 100%; /* Limit image width to the container width */
+        height: auto;
+        display: block; /* Ensures each image starts on a new line */
+        margin-top: 10px;
+      }
+      .custom-emoji,
+      .sticker {
+        height: 20px; /* Example height, adjust based on your layout needs */
+        vertical-align: middle; /* Aligns the emoji with adjacent text */
+      }
+      a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      p {
+        flex: 1; /* Takes remaining space */
+        margin: 0;
+      }
+      /* Add tooltip */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+      }
+
+      /* Tooltip text */
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: black;
+        color: white;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      /* Show the tooltip text when you mouse over the tooltip container */
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>opensource.pet</h1>
+    <select id="guildFilter">
+      <option value="">Guild</option>
+      <!-- Options will be dynamically populated -->
+    </select>
+    <select id="userFilter">
+      <option value="">User</option>
+      <!-- Options will be dynamically populated -->
+    </select>
+    <input type="text" id="userIdFilter" placeholder="Search by User ID" />
+    <div id="messages"></div>
+
+    <script>
+      const socket = io("http://localhost:3000");
+      const messagesContainer = document.getElementById("messages");
+      const guildFilter = document.getElementById("guildFilter");
+      const userFilter = document.getElementById("userFilter");
+      const userIdFilter = document.getElementById("userIdFilter");
+
+      let messages = [];
+
+      socket.on("newMessage", function (data) {
+        messages.push(data);
+        displayMessage(data); // Call displayMessage for each new message
+        updateFilters();
+      });
+
+      guildFilter.addEventListener("change", function () {
+        displayFilteredMessages();
+      });
+
+      userFilter.addEventListener("change", function () {
+        displayFilteredMessages();
+      });
+
+      userIdFilter.addEventListener("input", function () {
+        displayFilteredMessages();
+      });
+
+      function displayMessage(message) {
+        const messageElement = document.createElement("div");
+        messageElement.className = "message";
+
+        // Append avatar to the message element
+        messageElement.innerHTML += `<img src="${
+          message.avatar_url || "default-avatar.png"
+        }" alt="Avatar" class="avatar">`;
+
+        // Construct the message content HTML
+        const contentElement = document.createElement("p");
+        contentElement.textContent = `${message.username} (${
+          message.guildName || "Unknown Guild"
+        } in: ${message.channelName || "Unknown Channel"}): `;
+
+        // Process custom emojis in the message content
+        const parsedContent = message.content.replace(
+          /<:(\w+):(\d+)>/g,
+          (match, name, id) => {
+            return `<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="custom-emoji">`;
+          }
+        );
+
+        // Set the parsed content HTML
+        contentElement.innerHTML += parsedContent;
+
+        // Construct HTML for attachments
+        const attachmentsHtml = message.attachments
+          .map(
+            (url) =>
+              `<img src="${url}" alt="Attachment" class="attachment-image">`
+          )
+          .join("");
+
+        // Append content and attachments to the message element
+        messageElement.appendChild(contentElement);
+        messageElement.innerHTML += attachmentsHtml;
+
+        // Append message link to the message element
+        messageElement.innerHTML += `<a href="${
+          message.message_link || "#"
+        }" target="_blank" class="tooltip">↖
+          <span class="tooltiptext">Open in Discord</span>
+        </a>`;
+
+        // Append the message element to the messages container
+        messagesContainer.appendChild(messageElement);
+
+        // Convert timestamp to Date object
+        const timestamp = new Date(message.timestamp);
+
+        // Check if timestamp is valid
+        if (!isNaN(timestamp.getTime())) {
+          // Append timestamp under the message box
+          const timestampElement = document.createElement("div");
+          timestampElement.className = "timestamp";
+          timestampElement.textContent = timestamp.toLocaleString(); // Format the timestamp as desired
+          messagesContainer.appendChild(timestampElement);
+        } else {
+          console.error("Invalid timestamp:", message.timestamp);
+        }
+      }
+
+      function displayFilteredMessages() {
+        const filteredGuildId = guildFilter.value.toLowerCase();
+        const filteredUserId = userFilter.value.toLowerCase();
+        const filteredUserIdInput = userIdFilter.value.toLowerCase();
+
+        messagesContainer.innerHTML = ""; // Clear current messages
+        messages.forEach((message) => {
+          const messageGuildName = message.guildName ? message.guildName.toLowerCase() : "";
+          const messageUserName = message.username ? message.username.toLowerCase() : "";
+          const messageUserId = message.userId ? message.userId.toLowerCase() : "";
+          if (
+            (messageGuildName.includes(filteredGuildId) || filteredGuildId === "") &&
+            (messageUserName.includes(filteredUserId) || filteredUserId === "") &&
+            (messageUserId.includes(filteredUserIdInput) || filteredUserIdInput === "")
+          ) {
+            displayMessage(message); // Re-display filtered messages
+          }
+        });
+      }
+
+      function updateFilters() {
+        const guildSet = new Set();
+        const userSet = new Set();
+
+        messages.forEach((message) => {
+          if (message.guildId && message.guildName) {
+            guildSet.add(
+              JSON.stringify({ id: message.guildId, name: message.guildName })
+            );
+          }
+          if (message.userId && message.username) {
+            userSet.add(
+              JSON.stringify({ id: message.userId, name: message.username })
+            );
+          }
+        });
+
+        guildFilter.innerHTML = '<option value="">Guild</option>'; // Reset
+        userFilter.innerHTML = '<option value="">User</option>'; // Reset
+
+        guildSet.forEach((json) => {
+          const { id, name } = JSON.parse(json);
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = name;
+          guildFilter.appendChild(option);
+        });
+
+        userSet.forEach((json) => {
+          const { id, name } = JSON.parse(json);
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = name;
+          userFilter.appendChild(option);
+        });
+      }
+    </script>
+  </body>
+</html>
