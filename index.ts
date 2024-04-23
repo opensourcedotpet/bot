@@ -114,7 +114,7 @@ client.on("guildMemberAdd", (member) => {
     };
 
     // Emit to WebSocket
-    io.emit("newMessage", joinData);
+    io.emit("updateFilters", joinData);
 
     // Send to webhook
     fetch(webhookURL, {
@@ -153,7 +153,7 @@ client.on("messageCreate", async (message) => {
       userId: message.author.id,
     };
 
-    io.emit("newMessage", messageData);
+    io.emit("updateFilters", messageData);
 
     fetch(webhookURL, {
       method: "POST",
