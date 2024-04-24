@@ -46,6 +46,7 @@ select,
   border: 1px solid #ccc;
   font-size: 16px;
   background-color: #fff;
+  font-family: "gg sans", sans-serif;
 }
 
 #messages {
@@ -96,28 +97,6 @@ sup {
 
 .message-content div {
   color: #000000; /* Discord message text color */
-}
-
-
-.attachment-image,
-.embedded-image,
-.custom-emoji,
-.sticker {
-  max-height: 100px;
-  width: auto;
-  border-radius: 8px;
-}
-.tooltip .tooltiptext {
-  visibility: hidden;
-  background-color: #555; /* Darker for better visibility */
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 5px 10px; /* Adjust padding */
-}
-
-.tooltip:hover .tooltiptext {
-  visibility: visible;
 }
 
 a {
@@ -187,10 +166,11 @@ code {
   background-color: #f4f4f8; /* Or any other color */
 }
 
-.stat h1 {
+.stat h2 {
   font-size: 2.5rem; /* Large font size for the number */
   margin: 0;
   font-weight: bold;
+  text-align: center;
 }
 
 .stat p {
@@ -229,17 +209,16 @@ footer {
   margin-right: 50px; /* Adds some margin to the right of each section */
 }
 
-.footer-section h2 {
+.footer-section h3 {
   font-size: 1.25rem; /* Adjust the size as needed */
   margin-bottom: 0.5rem; /* Adjust space between title and text */
 }
 
 .footer-section p,
+.footer-section span,
 .footer-section a {
-  font-size: 1rem; /* Adjust the size as needed */
+  font-size: small;
   margin: 0; /* Remove margin for a tighter fit */
-  padding: 0.25rem 0; /* Adjust padding as needed */
-  list-style: none; /* Remove bullet points from list items if <ul>/<li> is used */
   color: #000;
 }
 
