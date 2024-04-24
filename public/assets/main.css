@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'gg sans';
+  src: url('/assets/fonts/ggsans.woff2') format('woff2');
+}
+
 body {
   font-family: "gg sans", sans-serif;
   background-color: #f4f4f8;
@@ -46,33 +51,54 @@ select,
 #messages {
   display: flex;
   flex-direction: column-reverse; /* Display new messages on top */
-  align-items: center;
+  align-items: left;
 }
 .message {
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
   display: flex;
-  align-items: flex-start;
-  gap: 15px;
-  flex-wrap: wrap;
-  width: 100%; /* Full width */
-  max-width: 600px; /* Maximum width */
+  align-items: start;
+  margin-bottom: 10px;
+  font-size: 14px; /* Adjust size as necessary */
+  color: #000000; /* Discord message text color */
 }
+
 .avatar {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  margin-right: 18px; /* Adjust spacing as necessary */
   flex-shrink: 0; /* Prevent avatar from shrinking */
 }
+
 .message-content {
-  position: relative;
-  max-width: 100%;
-  overflow: hidden; /* Hide overflow */
-  word-break: break-word; /* To break long words and prevent overflow */
+  flex-grow: 1;
 }
+
+.message-top {
+  display: flex;
+  align-items: baseline;
+}
+
+strong {
+  font-weight: 600; /* Discord username font-weight */
+  color: #000000; /* Adjust username color if necessary */
+}
+
+sup {
+  margin-left: 6px; /* Adjust spacing as necessary */
+  font-size: 12px; /* Adjust size as necessary */
+  color: #72767D; /* Discord secondary text color */
+  vertical-align: baseline;
+}
+
+.message-top sup {
+  line-height: 1.4;
+}
+
+.message-content div {
+  color: #000000; /* Discord message text color */
+}
+
+
 .attachment-image,
 .embedded-image,
 .custom-emoji,
@@ -181,7 +207,7 @@ footer {
   background-color: #e7e5e4;
   color: #333;
   padding: 20px;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #e7e5e4;
   /* Removed width: 100%; since it's block level and will naturally expand */
   /* Removed flex-shrink: 0; as it's not necessary with the current flex settings */
 }
@@ -233,6 +259,17 @@ footer {
   height: 1rem; /* Example size, adjust as needed */
   width: 1rem; /* Example size, adjust as needed */
   margin-right: 0.5rem; /* Adds space between the icon and the text */
+}
+
+.gif {
+  max-width: 100px; /* Set max width for GIFs */
+  max-height: 100px; /* Set max height for GIFs */
+}
+
+.emoji {
+  width: 20px; /* Set width for custom emojis */
+  height: 20px; /* Set height for custom emojis */
+  vertical-align: middle;
 }
 
 @media (max-width: 768px) {

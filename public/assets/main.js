@@ -3,246 +3,246 @@ const messagesContainer = document.getElementById("messages");
 const guildFilter = document.getElementById("guildFilter");
 const userFilter = document.getElementById("userFilter");
 const userIdFilter = document.getElementById("userIdFilter");
+const messages = [];
 
-let messages = [];
-
-socket.on("updateFilters", function (data) {
-  updateFilters();
-  messages.unshift(data); // prepend new messages to the array
-  displayMessages(); // call to update the message display
-});
-
-socket.on("updateStats", function (stats) {
-  console.log("Received stats:", stats);
-  document.getElementById('guild-count').textContent = stats.guildCount.toLocaleString();
-  document.getElementById('user-count').textContent = stats.userCount.toLocaleString();
-});
+socket.on("updateFilters", handleData);
+socket.on("newMessage", handleData);
+socket.on("updateStats", handleStatsUpdate);
 
 let currentPage = 0;
-const pageSize = 50; // Number of messages to load per page
+const pageSize = 1000;
 let allMessagesLoaded = false;
 
-window.addEventListener("scroll", () => {
-  if (nearBottomOfPage() && !allMessagesLoaded) {
-    currentPage++;
-    loadMoreMessages(currentPage);
-  }
-});
+window.addEventListener("scroll", throttle(handleScroll, 100));
 
-function nearBottomOfPage() {
-  return (
-    window.innerHeight + window.scrollY >= document.body.offsetHeight - 100
-  );
+function throttle(fn, wait) {
+	let isThrottling = false;
+	return function (...args) {
+		if (!isThrottling) {
+			fn.apply(this, args);
+			isThrottling = true;
+			// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+			setTimeout(() => (isThrottling = false), wait);
+		}
+	};
+}
+
+function handleScroll() {
+	if (
+		allMessagesLoaded ||
+		window.innerHeight + window.scrollY < document.body.offsetHeight - 100
+	) {
+		return;
+	}
+	loadMoreMessages(++currentPage);
+}
+
+function handleData(data) {
+	if (!data || typeof data !== "object") {
+		console.error("Invalid message data received:", data);
+		return;
+	}
+	// Add the new message at the start of your messages array.
+	messages.unshift(data);
+	displayMessages();
+
+	// Update the users filter with new data
+	updateFilters();
+}
+
+function handleStatsUpdate(stats) {
+	try {
+		if (!stats || typeof stats !== "object")
+			throw new Error("Invalid stats data received");
+		document.getElementById("guild-count").textContent =
+			stats.guildCount.toLocaleString();
+		document.getElementById("user-count").textContent =
+			stats.userCount.toLocaleString();
+	} catch (error) {
+		console.error("Failed to update stats:", error);
+	}
 }
 
 function loadMoreMessages(page) {
-  // Assuming `messages` is a globally stored array of all messages
-  const startIndex = page * pageSize;
-  const endIndex = startIndex + pageSize;
-  const messagesToLoad = messages.slice(startIndex, endIndex);
+	const startIndex = page * pageSize;
+	const endIndex = Math.min(startIndex + pageSize, messages.length);
+	const messagesToLoad = messages.slice(startIndex, endIndex);
 
-  if (messagesToLoad.length === 0) {
-    allMessagesLoaded = true;
-    return;
-  }
-
-  messagesToLoad.forEach((message) => {
-    const messageElement = createMessageElement(message);
-    messagesContainer.appendChild(messageElement); // Append new messages at the end
-  });
+	if (messagesToLoad.length === 0) {
+		allMessagesLoaded = true;
+		return;
+	}
+	for (const message of messagesToLoad) {
+		messagesContainer.appendChild(createMessageElement(message));
+	}
 }
-
-guildFilter.addEventListener("change", displayFilteredMessages);
-userFilter.addEventListener("change", displayFilteredMessages);
-userIdFilter.addEventListener("input", displayFilteredMessages);
 
 function displayMessages() {
-  messagesContainer.innerHTML = ""; // Clear the message container
-  messages.forEach((message) => {
-    const messageElement = createMessageElement(message);
-    messagesContainer.prepend(messageElement); // Show new messages on top
-  });
+	// Re-use applyFilters to maintain filter settings on new messages
+	applyFilters();
 }
 
-function formatCodeBlocks(content) {
-  console.log("Original Content: ", content);
-  const formattedContent = content.replace(
-    /```(\w*)\n?([\s\S]*?)```/g,
-    (match, lang, code) => {
-      const escapedCode = escapeHTML(code);
-      console.log("Code Block: ", escapedCode);
-      return `<pre><code class='${lang || ""}'>${escapedCode}</code></pre>`;
-    }
-  );
-  console.log("Formatted Content: ", formattedContent);
-  return formattedContent;
+// This function is called when filters are changed.
+function applyFilters() {
+	// First, clear all current messages.
+	messagesContainer.innerHTML = "";
+
+	// Filter messages based on the current selection of the filters.
+	const filteredMessages = messages.filter(messageMatchesFilters);
+
+	// Display filtered messages.
+	for (const message of filteredMessages) {
+		messagesContainer.prepend(createMessageElement(message));
+	}
 }
 
-function escapeHTML(code) {
-  // Escaping HTML to prevent XSS and correctly display special characters
-  return code
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// Call applyFilters when a change happens in any of the filters.
+guildFilter.addEventListener("change", applyFilters);
+userFilter.addEventListener("change", applyFilters);
+userIdFilter.addEventListener("input", () => {
+	const sanitizedInput = sanitizeInput(userIdFilter.value);
+	userIdFilter.value = sanitizedInput; // Update the input value with sanitized input
+	applyFilters();
+});
 
-function createMessageElement(message) {
-  const messageElement = document.createElement("div");
-  messageElement.className = "message";
+function messageMatchesFilters(message) {
+	const guildValue = guildFilter.value;
+	const userValue = userFilter.value.toLowerCase();
+	const userIdValue = userIdFilter.value.trim().toLowerCase();
 
-  // Avatar
-  const avatarElement = document.createElement("img");
-  avatarElement.src = message.avatar_url || "default-avatar.png";
-  avatarElement.alt = "User avatar";
-  avatarElement.className = "avatar";
-  messageElement.appendChild(avatarElement);
+	// Make sure undefined values are handled.
+	const messageGuildId = message.guildId || "";
+	const messageUsername = message.username || "";
+	const messageUserId = message.userId || "";
 
-  // Content container
-  const contentContainer = document.createElement("div");
-  contentContainer.className = "message-content";
+	const guildMatch = !guildValue || messageGuildId === guildValue;
+	const userMatch =
+		!userValue || messageUsername.toLowerCase().includes(userValue);
+	const userIdMatch =
+		!userIdValue || messageUserId.toLowerCase().includes(userIdValue);
 
-  // Username and channel info
-  const userInfoElement = document.createElement("div");
-  userInfoElement.className = "message-user-info";
-
-  const usernameElement = document.createElement("strong");
-  usernameElement.textContent = message.username;
-  userInfoElement.appendChild(usernameElement);
-
-  if (message.guildName && message.channelName) {
-    const channelInfoElement = document.createElement("span");
-    channelInfoElement.textContent = ` (Guild: ${message.guildName}, Channel: ${message.channelName})`;
-    userInfoElement.appendChild(channelInfoElement);
-  }
-
-  contentContainer.appendChild(userInfoElement);
-
-  // New line for message text
-  const textElement = document.createElement("div");
-  textElement.className = "message-text";
-  // Process and set the formatted content with code blocks
-  textElement.innerHTML = formatCodeBlocks(message.content);
-  contentContainer.appendChild(textElement);
-
-  // Handling custom emojis and Tenor GIFs within the message content
-  replaceCustomContent(textElement);
-
-  contentContainer.appendChild(textElement);
-
-  // Attachments
-  message.attachments.forEach((attachment) => {
-    const attachmentElement = document.createElement("img");
-    attachmentElement.src = attachment;
-    attachmentElement.className = "attachment-image";
-    contentContainer.appendChild(attachmentElement);
-  });
-
-  messageElement.appendChild(contentContainer);
-
-  // Discord message link
-  const linkElement = document.createElement("a");
-  linkElement.href = message.message_link;
-  linkElement.textContent = "↖";
-  linkElement.target = "_blank";
-  linkElement.className = "message-link";
-  messageElement.appendChild(linkElement);
-
-  return messageElement;
-}
-
-function replaceCustomContent(textElement) {
-  textElement.innerHTML = textElement.innerHTML
-    .replace(
-      /<:([\w]+):(\d+)>/g,
-      (match, name, id) =>
-        `<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="custom-emoji">`
-    )
-    .replace(
-      /https:\/\/tenor\.com\/view\/([\w-]+)-(\d+)/g,
-      (url) => `<img src="${url}.gif" alt="GIF" class="embedded-gif">`
-    );
-}
-
-function displayFilteredMessages() {
-  const guildValue = guildFilter.value; // This should match the exact guild names or be empty for 'no filter'
-  const userValue = userFilter.value.toLowerCase();
-  const userIdValue = userIdFilter.value.trim().toLowerCase();
-
-  messagesContainer.innerHTML = ""; // Clear current messages
-
-  const filteredMessages = messages.filter((message) => {
-    const matchesGuild = !guildValue || message.guildName === guildValue;
-    const matchesUser =
-      !userValue || message.username.toLowerCase().includes(userValue);
-    const matchesUserId =
-      !userIdValue || (message.userId && message.userId.includes(userIdValue));
-    return matchesGuild && matchesUser && matchesUserId;
-  });
-
-  filteredMessages.forEach((message) => {
-    const messageElement = createMessageElement(message);
-    messagesContainer.prepend(messageElement); // Show new messages on top
-  });
-
-  // Debug to see if any messages are being filtered
-  console.log("Filtered Messages:", filteredMessages.length);
+	return guildMatch && userMatch && userIdMatch;
 }
 
 function updateFilters() {
-  const guildSet = new Set();
-  const userSet = new Set();
-
-  messages.forEach((message) => {
-    if (message.guildName) {
-      guildSet.add(message.guildName); // Make sure the guild names are correct
-    }
-    if (message.username) {
-      userSet.add(message.username);
-    }
-  });
-
-  guildFilter.innerHTML = '<option value="">Guild</option>';
-  guildSet.forEach((guild) => {
-    const option = document.createElement("option");
-    option.textContent = guild;
-    option.value = guild; // Ensure this value matches what's used in the filter
-    guildFilter.appendChild(option);
-  });
-
-  userFilter.innerHTML = '<option value="">User</option>';
-  userSet.forEach((user) => {
-    const option = document.createElement("option");
-    option.textContent = user;
-    option.value = user.toLowerCase();
-    userFilter.appendChild(option);
-  });
+	updateFilterOptions(
+		userFilter,
+		messages.map((m) => m.username),
+	);
 }
 
-// Get the modal
-var modal = document.getElementById("optoutModal");
+function updateFilterOptions(filterElement, options) {
+	// Get unique options
+	const uniqueOptions = [...new Set(options)].filter(Boolean);
 
-// Get the button that opens the modal
-var btn = document.querySelector('a[href="#optout"]');
+	// Clear existing options
+	filterElement.innerHTML = `<option value="">Select ${filterElement.id.replace(
+		"Filter",
+		"",
+	)}</option>`;
 
-// Get the <span> element that closes the modal
-var span = document.getElementsByClassName("close")[0];
+	// Create and append new options
+	for (const option of uniqueOptions) {
+		const optionElement = document.createElement("option");
+		optionElement.textContent = option;
+		optionElement.value = option;
+		filterElement.appendChild(optionElement);
+	}
+}
 
-// When the user clicks the button, open the modal
-btn.onclick = function (event) {
-  event.preventDefault();
-  modal.style.display = "block";
-};
+window.addEventListener("load", async () => {
+	try {
+		// Send a request to fetch all available guilds from the server
+		const response = await fetch("/api/guilds.json");
+		const guilds = await response.json();
 
-// When the user clicks on <span> (x), close the modal
-span.onclick = function () {
-  modal.style.display = "none";
-};
+		for (const guild of guilds) {
+			const optionElement = document.createElement("option");
+			optionElement.textContent = guild.name;
+			optionElement.value = guild.id;
+			guildFilter.appendChild(optionElement);
+		}
+	} catch (error) {
+		console.error("Failed to fetch guilds:", error);
+	}
+});
 
-// When the user clicks anywhere outside of the modal, close it
-window.onclick = function (event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
-};
+function createMessageElement(message) {
+	const messageElement = document.createElement("div");
+	messageElement.className = "message";
+
+	const avatar = document.createElement("img");
+	avatar.src = message.avatar_url;
+	avatar.className = "avatar";
+	avatar.alt = `${message.username}'s Avatar`;
+
+	const messageContent = document.createElement("div");
+	messageContent.className = "message-content";
+
+	const messageTop = document.createElement("div");
+	messageTop.className = "message-top";
+
+	const username = document.createElement("strong");
+	username.textContent = message.username;
+	messageTop.appendChild(username);
+
+	const serverName = document.createElement("sup");
+	serverName.textContent = ` ${message.guildName}`;
+	messageTop.appendChild(serverName);
+
+	const serverId = document.createElement("sup");
+	serverId.textContent = `(${message.guildId}) `;
+	messageTop.appendChild(serverId);
+
+	const textContent = document.createElement("div");
+	textContent.innerHTML = DOMPurify.sanitize(message.content);
+	textContent.innerHTML = linkifyContent(message.content);
+
+	messageContent.appendChild(messageTop);
+	messageContent.appendChild(textContent);
+
+	messageElement.appendChild(avatar);
+	messageElement.appendChild(messageContent);
+
+	return messageElement;
+}
+
+function linkifyContent(content) {
+	// Replace Tenor links with GIFs
+	content = content.replace(
+		/https:\/\/tenor\.com\/view\/[^\s]+/g,
+		(match) => `<img src="${match}.gif" class="gif">`,
+	);
+
+	// Replace custom emojis with images
+	content = content.replace(
+		/<:(\w+):(\d+)>/g,
+		(match, name, id) =>
+			`<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="emoji">`,
+	);
+
+	return content;
+}
+
+function sanitizeInput(input) {
+	// Use a regular expression to allow only alphanumeric characters
+	return input.replace(/[^\w]/g, "");
+}
+
+const modal = document.getElementById("optoutModal");
+document
+	.querySelector('a[href="#optout"]')
+	.addEventListener("click", (event) => {
+		event.preventDefault();
+		modal.style.display = "block";
+	});
+
+document.getElementsByClassName("close")[0].addEventListener("click", () => {
+	modal.style.display = "none";
+});
+
+window.addEventListener("click", (event) => {
+	if (event.target === modal) {
+		modal.style.display = "none";
+	}
+});
