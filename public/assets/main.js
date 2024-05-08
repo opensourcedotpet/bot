@@ -3,15 +3,15 @@ const messagesContainer = document.getElementById("messages");
 const guildFilter = document.getElementById("guildFilter");
 const userFilter = document.getElementById("userFilter");
 const userIdFilter = document.getElementById("userIdFilter");
+const userProfileContainer = document.getElementById("userProfile");
 const messages = [];
+let currentPage = 0;
+const pageSize = 1000;
+let allMessagesLoaded = false;
 
 socket.on("updateFilters", handleData);
 socket.on("newMessage", handleData);
 socket.on("updateStats", handleStatsUpdate);
-
-let currentPage = 0;
-const pageSize = 1000;
-let allMessagesLoaded = false;
 
 window.addEventListener("scroll", throttle(handleScroll, 100));
 window.addEventListener("load", loadGuilds);
@@ -20,8 +20,12 @@ userFilter.addEventListener("change", applyFilters);
 userIdFilter.addEventListener("input", handleUserIdInput);
 
 const modal = document.getElementById("optoutModal");
-document.querySelector('a[href="#optout"]').addEventListener("click", openModal);
-document.getElementsByClassName("close")[0].addEventListener("click", closeModal);
+document
+	.querySelector('a[href="#optout"]')
+	.addEventListener("click", openModal);
+document
+	.getElementsByClassName("close")[0]
+	.addEventListener("click", closeModal);
 window.addEventListener("click", (event) => {
 	if (event.target === modal) closeModal();
 });
@@ -53,8 +57,8 @@ function handleData(data) {
 		return;
 	}
 	messages.unshift(data);
-	displayMessages();
 	updateFilters();
+	displayMessages();
 }
 
 function handleStatsUpdate(stats) {
@@ -63,8 +67,10 @@ function handleStatsUpdate(stats) {
 		return;
 	}
 
-	document.getElementById("guild-count").textContent = stats.guildCount.toLocaleString();
-	document.getElementById("user-count").textContent = stats.userCount.toLocaleString();
+	document.getElementById("guild-count").textContent =
+		stats.guildCount.toLocaleString();
+	document.getElementById("user-count").textContent =
+		stats.userCount.toLocaleString();
 }
 
 function loadMoreMessages(page) {
@@ -78,20 +84,35 @@ function loadMoreMessages(page) {
 	}
 
 	for (const message of messagesToLoad) {
-		messagesContainer.appendChild(createMessageElement(message));
+		messagesContainer.prepend(createMessageElement(message));
 	}
 }
 
 function displayMessages() {
-	applyFilters();
-}
-
-function applyFilters() {
 	messagesContainer.innerHTML = "";
 	const filteredMessages = messages.filter(messageMatchesFilters);
 
 	for (const message of filteredMessages) {
 		messagesContainer.prepend(createMessageElement(message));
+	}
+}
+
+function applyFilters() {
+	const filteredMessages = messages.filter(messageMatchesFilters);
+
+	messagesContainer.innerHTML = "";
+	for (const message of filteredMessages) {
+		messagesContainer.prepend(createMessageElement(message));
+	}
+
+	const selectedUserId = userIdFilter.value.trim().toLowerCase();
+	if (selectedUserId) {
+		const selectedUser = messages.find((m) => m.userId === selectedUserId);
+		if (selectedUser) {
+			displayUserProfile(selectedUser);
+		}
+	} else {
+		userProfileContainer.innerHTML = "";
 	}
 }
 
@@ -111,26 +132,37 @@ function messageMatchesFilters(message) {
 	const messageUserId = message.userId || "";
 
 	const guildMatch = !guildValue || messageGuildId === guildValue;
-	const userMatch = !userValue || messageUsername.toLowerCase().includes(userValue);
-	const userIdMatch = !userIdValue || messageUserId.toLowerCase().includes(userIdValue);
+	const userMatch =
+		!userValue || messageUsername.toLowerCase().includes(userValue);
+	const userIdMatch =
+		!userIdValue || messageUserId.toLowerCase().includes(userIdValue);
 
 	return guildMatch && userMatch && userIdMatch;
 }
 
 function updateFilters() {
-	updateFilterOptions(userFilter, messages.map((m) => m.username));
+	const uniqueUsernames = [...new Set(messages.map((m) => m.username))].filter(
+		Boolean,
+	);
+	updateFilterOptions(userFilter, uniqueUsernames);
 }
 
 function updateFilterOptions(filterElement, options) {
-	const uniqueOptions = [...new Set(options)].filter(Boolean);
+	const currentValue = filterElement.value;
+	filterElement.innerHTML = `<option value="">Select ${filterElement.id.replace(
+		"Filter",
+		"",
+	)}</option>`;
 
-	filterElement.innerHTML = `<option value="">Select ${filterElement.id.replace("Filter", "")}</option>`;
-
-	for (const option of uniqueOptions) {
+	for (const option of options) {
 		const optionElement = document.createElement("option");
 		optionElement.textContent = option;
 		optionElement.value = option;
 		filterElement.appendChild(optionElement);
+	}
+
+	if (options.includes(currentValue)) {
+		filterElement.value = currentValue;
 	}
 }
 
@@ -167,6 +199,13 @@ function createMessageElement(message) {
 
 	const username = document.createElement("strong");
 	username.textContent = message.username;
+	username.className = "username-link";
+	username.dataset.userId = message.userId;
+	username.addEventListener("click", () => {
+		userIdFilter.value = message.userId;
+		applyFilters();
+	});
+
 	messageTop.appendChild(username);
 
 	const serverName = document.createElement("sup");
@@ -190,15 +229,23 @@ function createMessageElement(message) {
 }
 
 function linkifyContent(content) {
+	// Replace mentions like <@USERID> with the username
+	content = content.replace(/<@(\d+)>/g, (match, userId) => {
+		const user = messages.find((m) => m.userId === userId);
+		return user ? `@${user.username}` : match;
+	});
+
+	// Replace tenor GIF links
 	content = content.replace(
 		/https:\/\/tenor\.com\/view\/[^\s]+/g,
-		(match) => `<img src="${match}.gif" class="gif">`
+		(match) => `<img src="${match}.gif" class="gif">`,
 	);
 
+	// Replace custom emojis like <:emojiName:emojiId>
 	content = content.replace(
 		/<:(\w+):(\d+)>/g,
 		(match, name, id) =>
-			`<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="emoji">`
+			`<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="emoji">`,
 	);
 
 	return content;
@@ -206,6 +253,42 @@ function linkifyContent(content) {
 
 function sanitizeInput(input) {
 	return input.replace(/[^\w]/g, "");
+}
+
+function displayUserProfile(user) {
+	const mutualServers = [
+		...new Set(
+			messages.filter((m) => m.userId === user.userId).map((m) => m.guildName),
+		),
+	];
+
+	userProfileContainer.innerHTML = `
+                <div class="user-profile">
+                        <img src="${user.avatar_url}" alt="${user.username}'s Avatar" class="profile-avatar">
+                        <div class="profile-info">
+                                <p><strong>Username:</strong> ${user.username}</p>
+                                <p><strong>User ID:</strong> ${user.userId}</p>
+                                <p><strong>Mutual Servers:</strong> ${mutualServers.join(
+																	", ",
+																)}</p>
+                                <p><strong>Latest Messages:</strong></p>
+                                <ul class="latest-messages">
+                                        ${messages
+																					.filter(
+																						(m) => m.userId === user.userId,
+																					)
+																					.slice(0, 5)
+																					.map(
+																						(m) =>
+																							`<li>${linkifyContent(
+																								m.content,
+																							)}</li>`,
+																					)
+																					.join("")}
+                                </ul>
+                        </div>
+                </div>
+        `;
 }
 
 function openModal(event) {
