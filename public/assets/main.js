@@ -14,6 +14,17 @@ const pageSize = 1000;
 let allMessagesLoaded = false;
 
 window.addEventListener("scroll", throttle(handleScroll, 100));
+window.addEventListener("load", loadGuilds);
+guildFilter.addEventListener("change", applyFilters);
+userFilter.addEventListener("change", applyFilters);
+userIdFilter.addEventListener("input", handleUserIdInput);
+
+const modal = document.getElementById("optoutModal");
+document.querySelector('a[href="#optout"]').addEventListener("click", openModal);
+document.getElementsByClassName("close")[0].addEventListener("click", closeModal);
+window.addEventListener("click", (event) => {
+	if (event.target === modal) closeModal();
+});
 
 function throttle(fn, wait) {
 	let isThrottling = false;
@@ -21,7 +32,6 @@ function throttle(fn, wait) {
 		if (!isThrottling) {
 			fn.apply(this, args);
 			isThrottling = true;
-			// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
 			setTimeout(() => (isThrottling = false), wait);
 		}
 	};
@@ -42,25 +52,19 @@ function handleData(data) {
 		console.error("Invalid message data received:", data);
 		return;
 	}
-	// Add the new message at the start of your messages array.
 	messages.unshift(data);
 	displayMessages();
-
-	// Update the users filter with new data
 	updateFilters();
 }
 
 function handleStatsUpdate(stats) {
-	try {
-		if (!stats || typeof stats !== "object")
-			throw new Error("Invalid stats data received");
-		document.getElementById("guild-count").textContent =
-			stats.guildCount.toLocaleString();
-		document.getElementById("user-count").textContent =
-			stats.userCount.toLocaleString();
-	} catch (error) {
-		console.error("Failed to update stats:", error);
+	if (!stats || typeof stats !== "object") {
+		console.error("Invalid stats data received");
+		return;
 	}
+
+	document.getElementById("guild-count").textContent = stats.guildCount.toLocaleString();
+	document.getElementById("user-count").textContent = stats.userCount.toLocaleString();
 }
 
 function loadMoreMessages(page) {
@@ -72,76 +76,56 @@ function loadMoreMessages(page) {
 		allMessagesLoaded = true;
 		return;
 	}
+
 	for (const message of messagesToLoad) {
 		messagesContainer.appendChild(createMessageElement(message));
 	}
 }
 
 function displayMessages() {
-	// Re-use applyFilters to maintain filter settings on new messages
 	applyFilters();
 }
 
-// This function is called when filters are changed.
 function applyFilters() {
-	// First, clear all current messages.
 	messagesContainer.innerHTML = "";
-
-	// Filter messages based on the current selection of the filters.
 	const filteredMessages = messages.filter(messageMatchesFilters);
 
-	// Display filtered messages.
 	for (const message of filteredMessages) {
 		messagesContainer.prepend(createMessageElement(message));
 	}
 }
 
-// Call applyFilters when a change happens in any of the filters.
-guildFilter.addEventListener("change", applyFilters);
-userFilter.addEventListener("change", applyFilters);
-userIdFilter.addEventListener("input", () => {
+function handleUserIdInput() {
 	const sanitizedInput = sanitizeInput(userIdFilter.value);
-	userIdFilter.value = sanitizedInput; // Update the input value with sanitized input
+	userIdFilter.value = sanitizedInput;
 	applyFilters();
-});
+}
 
 function messageMatchesFilters(message) {
 	const guildValue = guildFilter.value;
 	const userValue = userFilter.value.toLowerCase();
 	const userIdValue = userIdFilter.value.trim().toLowerCase();
 
-	// Make sure undefined values are handled.
 	const messageGuildId = message.guildId || "";
 	const messageUsername = message.username || "";
 	const messageUserId = message.userId || "";
 
 	const guildMatch = !guildValue || messageGuildId === guildValue;
-	const userMatch =
-		!userValue || messageUsername.toLowerCase().includes(userValue);
-	const userIdMatch =
-		!userIdValue || messageUserId.toLowerCase().includes(userIdValue);
+	const userMatch = !userValue || messageUsername.toLowerCase().includes(userValue);
+	const userIdMatch = !userIdValue || messageUserId.toLowerCase().includes(userIdValue);
 
 	return guildMatch && userMatch && userIdMatch;
 }
 
 function updateFilters() {
-	updateFilterOptions(
-		userFilter,
-		messages.map((m) => m.username),
-	);
+	updateFilterOptions(userFilter, messages.map((m) => m.username));
 }
 
 function updateFilterOptions(filterElement, options) {
-	// Get unique options
 	const uniqueOptions = [...new Set(options)].filter(Boolean);
 
-	// Clear existing options
-	filterElement.innerHTML = `<option value="">Select ${filterElement.id.replace(
-		"Filter",
-		"",
-	)}</option>`;
+	filterElement.innerHTML = `<option value="">Select ${filterElement.id.replace("Filter", "")}</option>`;
 
-	// Create and append new options
 	for (const option of uniqueOptions) {
 		const optionElement = document.createElement("option");
 		optionElement.textContent = option;
@@ -150,9 +134,8 @@ function updateFilterOptions(filterElement, options) {
 	}
 }
 
-window.addEventListener("load", async () => {
+async function loadGuilds() {
 	try {
-		// Send a request to fetch all available guilds from the server
 		const response = await fetch("/api/guilds.json");
 		const guilds = await response.json();
 
@@ -165,7 +148,7 @@ window.addEventListener("load", async () => {
 	} catch (error) {
 		console.error("Failed to fetch guilds:", error);
 	}
-});
+}
 
 function createMessageElement(message) {
 	const messageElement = document.createElement("div");
@@ -195,8 +178,7 @@ function createMessageElement(message) {
 	messageTop.appendChild(serverId);
 
 	const textContent = document.createElement("div");
-	textContent.innerHTML = DOMPurify.sanitize(message.content);
-	textContent.innerHTML = linkifyContent(message.content);
+	textContent.innerHTML = DOMPurify.sanitize(linkifyContent(message.content));
 
 	messageContent.appendChild(messageTop);
 	messageContent.appendChild(textContent);
@@ -208,41 +190,29 @@ function createMessageElement(message) {
 }
 
 function linkifyContent(content) {
-	// Replace Tenor links with GIFs
 	content = content.replace(
 		/https:\/\/tenor\.com\/view\/[^\s]+/g,
-		(match) => `<img src="${match}.gif" class="gif">`,
+		(match) => `<img src="${match}.gif" class="gif">`
 	);
 
-	// Replace custom emojis with images
 	content = content.replace(
 		/<:(\w+):(\d+)>/g,
 		(match, name, id) =>
-			`<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="emoji">`,
+			`<img src="https://cdn.discordapp.com/emojis/${id}.png" alt="${name}" class="emoji">`
 	);
 
 	return content;
 }
 
 function sanitizeInput(input) {
-	// Use a regular expression to allow only alphanumeric characters
 	return input.replace(/[^\w]/g, "");
 }
 
-const modal = document.getElementById("optoutModal");
-document
-	.querySelector('a[href="#optout"]')
-	.addEventListener("click", (event) => {
-		event.preventDefault();
-		modal.style.display = "block";
-	});
+function openModal(event) {
+	event.preventDefault();
+	modal.style.display = "block";
+}
 
-document.getElementsByClassName("close")[0].addEventListener("click", () => {
+function closeModal() {
 	modal.style.display = "none";
-});
-
-window.addEventListener("click", (event) => {
-	if (event.target === modal) {
-		modal.style.display = "none";
-	}
-});
+}
