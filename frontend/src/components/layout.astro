@@ -1,0 +1,31 @@
+---
+// src/components/Layout.astro
+
+const {
+    pageTitle = "Home",
+    description = "Discover a new way to find Discord users with Missed dis.cool. Say goodbye to basic search tools like Discord.id and enjoy effortless user discovery. We prioritize your privacy, ensuring secure and confidential searches. Try it today for a fresh approach to Discord user discovery!",
+} = Astro.props;
+const title = `${pageTitle} | opensource.pet`;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <title>{title}</title>
+        <link rel="stylesheet" href="/src/styles/global.css" />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://opensource.pet" />
+        <meta property="og:site_name" content="opensource.pet" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+    </head>
+    <body>
+        <slot />
+    </body>
+</html>

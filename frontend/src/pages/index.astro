@@ -1,0 +1,214 @@
+---
+import Header from "../components/Header";
+import Layout from "../components/layout.astro";
+import Status from "../components/Status";
+import Stats from "../components/Stats";
+import Footer from "../components/footer.astro";
+
+const PUBLIC_API = "https://api.spy.pm";
+---
+
+<style>
+  main {
+    margin: auto;
+    padding: 1.5rem;
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .text-gradient {
+    background-image: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 400%;
+    background-position: 0%;
+  }
+
+  .instructions code {
+    font-size: 0.875em;
+    font-weight: 700;
+    background: rgba(var(--accent), 12%);
+    color: rgb(var(--accent));
+    border-radius: 4px;
+    padding: 0.3em 0.45em;
+  }
+
+  .instructions strong {
+    color: rgb(var(--accent));
+  }
+
+  .link-card-grid {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    justify-content: center;
+    gap: 3em;
+  }
+
+  :root {
+    --accent: 124, 58, 237;
+    --accent-gradient: linear-gradient(
+      45deg,
+      rgb(var(--accent)),
+      #da62c4 30%,
+      white 60%
+    );
+  }
+
+  html {
+    font-family: system-ui, sans-serif;
+    background-color: #f6f6f6;
+  }
+
+  code {
+    font-family:
+      Menlo,
+      Monaco,
+      Lucida Console,
+      Liberation Mono,
+      DejaVu Sans Mono,
+      Bitstream Vera Sans Mono,
+      Courier New,
+      monospace;
+  }
+
+  .max-w-8xl {
+    max-width: 90rem;
+  }
+
+  .max-w-9xl {
+    max-width: 95rem;
+  }
+
+  .emoji {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: bottom;
+  }
+</style>
+<Layout />
+<body class="bg-white">
+  <div>
+    <Status statusAPI="https://api.opensource.pet" />
+    <Header client:only="react" />
+  </div>
+  <main class="mx-auto max-w-7xl text-center">
+    <h1>
+      Welcome to <span class="text-gradient">opensource.pet</span>
+    </h1>
+    <p>Explore Discord's data, without paying a dime.</p>
+    <div class="py-4">
+      <a
+        href="/users"
+        class="rounded-md bg-indigo-500 py-2.5 px-3.5 text-sm font-semibold text-white hover:bg-indigo-400"
+        >Search Discord Users</a
+      >
+    </div>
+  </main>
+
+  <div class="overflow-hidden bg-white py-18 sm:py-24">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <div
+        class="mx-auto grid max-w-2xl grid-cols-1 gap-y-16 gap-x-8 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2"
+      >
+        <div class="lg:pr-8 lg:pt-16">
+          <div class="lg:max-w-lg">
+            <h2 class="text-base font-semibold leading-7 text-indigo-600">
+              Paying for publicly scrapeable data?
+            </h2>
+            <p
+              class="mt-2 text-xl font-bold tracking-tight text-gray-900 sm:text-4xl"
+            >
+              Say fuck spy.pet!
+            </p>
+            <p class="mt-6 text-lg leading-8 text-gray-600">
+              Have you ever wondered why you were paying for easily scrapeable
+              data? Ever thought "holy shit, I'm a fucking idiot"? Look no
+              further!
+            </p>
+            <dl
+              class="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none"
+            >
+              <div class="relative pl-9">
+                <dt class="inline font-semibold text-gray-900">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    class="absolute top-1 left-1 h-5 w-5 text-indigo-600"
+                    ><path
+                      fill-rule="evenodd"
+                      d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                      clip-rule="evenodd"></path></svg
+                  >
+                  Effortless User Discovery
+                </dt>
+                <dd class="inline">
+                  Simplify the process of finding Discord users you're looking
+                  for. Say goodbye to endless searches and hello to effortless
+                  discovery.
+                </dd>
+              </div>
+              <div class="relative pl-9">
+                <dt class="inline font-semibold text-gray-900">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    class="absolute top-1 left-1 h-5 w-5 text-indigo-600"
+                    ><path
+                      fill-rule="evenodd"
+                      d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                      clip-rule="evenodd"></path></svg
+                  >
+                  Actual User Privacy
+                </dt>
+                <dd class="inline">
+                  We don't take any sort of analytics, your free to do whatever
+                  the fuck you want. Unlike some other aggregator... (p.s. block
+                  a.spy.pet)
+                </dd>
+              </div>
+              <div class="relative pl-9">
+                <dt class="inline font-semibold text-gray-900">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                    class="absolute top-1 left-1 h-5 w-5 text-indigo-600"
+                    ><path
+                      fill-rule="evenodd"
+                      d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                      clip-rule="evenodd"></path></svg
+                  >
+                  Completely Free
+                </dt>
+                <dd class="inline">
+                  We said fuck paying for data that's publicly available to
+                  everyone. While we're at it, why not make it open-source.
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        <img
+          src="/screenshots/advaith.png"
+          alt="Product screenshot"
+          class="w-[48rem] max-w-none rounded-xl shadow-xl ring-1 ring-gray-400/10 sm:w-[45rem] md:-ml-4 lg:-ml-0 transform scale-100 hover:scale-110 transition-transform duration-300 ease-in-out"
+          width="2432"
+          height="1442"
+        />
+      </div>
+    </div>
+  </div>
+
+  <Stats PUBLIC_API="https://api.opensource.pet" />
+  <Footer />
+</body>
